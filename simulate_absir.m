@@ -1,4 +1,4 @@
-function [Sh, Ih, Rh] = simulate_absir(M, Iv0, T, infection_rate, recovery_rate)
+function [Sh, Ih, Rh] = simulate_absir(M, Iv0, T, infection_rate, recovery_rate,pod_size,gathering_chance)
 % Simulate agent-based transmission model. Uses a graph to represent social
 % connectivity between agents.
 % 
