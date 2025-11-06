@@ -36,8 +36,8 @@ function [Sh, Ih, Rh] = simulate_absir(n_population,Iv0, T, infection_rate, reco
         R = IR(:,2);
         M = pod_maker(size(IR,1),pod_size);
         graph_M = graph(M);
-        figure();
-        plot(graph_M,'NodeColor','k', 'LineWidth',0.1)
+        %figure();
+        %plot(graph_M,'NodeColor','k', 'LineWidth',0.1)
 
         % Compute infection probabilities based on the social graph
         v_eff = infection_rate * M * I;
