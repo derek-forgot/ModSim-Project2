@@ -1,9 +1,9 @@
-function [M] = pod_maker(n_population,pod_size,gathering_chance)
+function [M] = pod_maker(n_population,pod_size)
     
     %Set these up to be used in the loop
     M = zeros(n_population, n_population);
-    M_pod_n = ones(n_pod_size, n_pod_size) - eye(n_pod_size);
-
+    M_pod_n = ones(pod_size, pod_size) - eye(pod_size);
+    
     for i = 1:(ceil(n_population/pod_size))+1
         slice_begin = (i - 1) * pod_size + 1;
         slice_end = slice_begin + pod_size - 1;
