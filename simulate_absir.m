@@ -27,15 +27,21 @@ function [Sh, Ih, Rh] = simulate_absir(n_population,Iv0, T, infection_rate, reco
     
     % Construct an "action" helper function
     function [I, R,n_population,pod_size,gathering_chance] = action(I, R,n_population,pod_size,gathering_chance)
-        %Remove random set of people
+
+        %Choose a random set of people to remove
         remove = rand(1,n_population)>gathering_chance;
-        IR = [I,R];
-        store = IR(remove,:);
-        IR(remove,:) = [];
-        I = IR(:,1);
-        R = IR(:,2);
-        M = pod_maker(size(IR,1),pod_size);
-        graph_M = graph(M);
+        
+        %Store the data of those people
+        store(:,1) = I(remove,:); store(:,2) = R(remove,:);
+
+        %Remove the people from the data that goes into the simulation
+        I(remove,:) = [];
+        R(remove,:) = [];
+
+        %Make the social graph for the data that is going to be simulated
+        M = pod_maker(size(I,1),pod_size);
+
+        %graph_M = graph(M);
         %figure();
         %plot(graph_M,'NodeColor','k', 'LineWidth',0.1)
 
@@ -44,34 +50,37 @@ function [Sh, Ih, Rh] = simulate_absir(n_population,Iv0, T, infection_rate, reco
         v_pr = v_eff ./ (1 + v_eff);
         
         % Draw random values
-        v_infect = rand(size(IR,1), 1) <= v_pr;
-        v_recover = rand(size(IR,1), 1) <= recovery_rate;
+        v_infect = rand(size(I,1), 1) <= v_pr;
+        v_recover = rand(n_population, 1) <= recovery_rate;
         
         % Infect non-recovered individuals
         I = I | v_infect & (~R);
-        % Recover infected individuals
-        R = R | (I & v_recover);
-        I = I & (~R);
+        new_infection = v_infect & (~R);
 
-        %recover people outside of simulation
-        v_recover2 = rand(size(store,1), 1) <= recovery_rate;
-        store(:,2) = store(:,2) | (store(:,1) & v_recover2);
-        
         %merge people back together
         for g=1:n_population
-            if remove(g) ==1
-                newR(g) = store(1,2);
-                newI(g) = store(1,1);
-                store(1) = [];
+            if remove(g) == 1
+                newR(g,1) = store(1,2);
+                newI(g,1) = store(1,1);
+                store(1,:) = [];
+                just_infected(g,1) = 0;
             else
-                newR(g) = R(1);
-                newI(g) = I(1);
+                newR(g,1) = R(1);
+                newI(g,1) = I(1);
+                just_infected(g,1) = new_infection(1);
                 R(1) = [];
                 I(1) = [];
+                new_infection(1) = [];
             end
         end
         I = newI;
         R = newR;
+
+        % Recover infected individuals (added part that makes sure cant get infected and recover in same timestep)
+        R = R | ((I & v_recover) & ~just_infected);
+        I = I & (~R);
+
+        %Assign outputs
         n_population = n_population;
         pod_size = pod_size;
         gathering_chance = gathering_chance;
