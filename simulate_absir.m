@@ -24,7 +24,24 @@ function [Sh, Ih, Rh] = simulate_absir(n_population,Iv0, T, infection_rate, reco
     Ih = zeros(dim, T); % Infection history
     Ih(:, 1) = Iv0; % Record the initial state to infection history
     Rh = zeros(dim, T); % Recovery history
+        
+    %Define scrambler
+    function [I, order] = scramble(I)
+        order = randperm(length(I));
+        for p=1:(length(I))
+            out(p,1) = I(order(p));
+        end
+        I = out;
+    end
     
+    %Define unscrambler
+    function [I] = unscramble(I,order)
+        for p=1:(length(I))
+            out(order(p),1) = I(p);
+        end
+        I = out;
+    end
+
     % Construct an "action" helper function
     function [I, R,n_population,pod_size,gathering_chance] = action(I, R,n_population,pod_size,gathering_chance)
 
@@ -38,6 +55,10 @@ function [Sh, Ih, Rh] = simulate_absir(n_population,Iv0, T, infection_rate, reco
         I(remove,:) = [];
         R(remove,:) = [];
 
+        %scramble I
+        [I, order] = scramble(I);
+
+        
         %Make the social graph for the data that is going to be simulated
         M = pod_maker(size(I,1),pod_size);
 
@@ -57,6 +78,9 @@ function [Sh, Ih, Rh] = simulate_absir(n_population,Iv0, T, infection_rate, reco
         I = I | v_infect & (~R);
         new_infection = v_infect & (~R);
 
+        %Unscramble I
+        I = unscramble(I,order);
+        
         %merge people back together
         for g=1:n_population
             if remove(g) == 1
