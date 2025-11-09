@@ -1,10 +1,5 @@
 function [Sh, Ih, Rh] = simulate_absir(n_population,Iv0, T, infection_rate, recovery_rate,pod_size,gathering_chance)
-% Simulate agent-based transmission model. Uses a graph to represent social
-% connectivity between agents.
-% 
-% Note: You may find it helpful to summarize the state history matrices via
-% summation. For instance sum(Ih, 1) will return the total number of
-% infected persons at each timestep in the simulation.
+% Simulate agent-based transmission model with pods and other cool stuff
 %
 % Inputs
 %   n_population: Population size
@@ -12,22 +7,22 @@ function [Sh, Ih, Rh] = simulate_absir(n_population,Iv0, T, infection_rate, reco
 %   T (integer): Number of timesteps to simulate
 %   infection_rate (float): Infection rate (probabilistic)
 %   recovery_rate (float): Recovery rate (probabilistic)
+%   pod_size (integer): Size of the pods
+%   gathering_chance (float): Chance for agent to gather
 % 
+%
 % Returns
 %   Sh (matrix): Susceptible state history
 %   Ih (matrix): Infected state history
 %   Rh (matrix): Recovered state history
 
     % Setup
-      % Dimensions of initial state
-    dim = n_population;
-    Ih = zeros(dim, T); % Infection history
-    Ih(:, 1) = Iv0; % Record the initial state to infection history
-    Rh = zeros(dim, T); % Recovery history
+    Ih = zeros(n_population, T);  %Make infection history
+    Ih(:, 1) = Iv0;                        %Record the initial state to infection history
+    Rh = zeros(n_population, T); %Make recovery history
         
     %Define scrambler
-    function [I, order] = scramble(I)
-        order = randperm(length(I));
+    function [I] = scramble(I,order)
         for p=1:(length(I))
             out(p,1) = I(order(p));
         end
@@ -55,16 +50,13 @@ function [Sh, Ih, Rh] = simulate_absir(n_population,Iv0, T, infection_rate, reco
         I(remove,:) = [];
         R(remove,:) = [];
 
-        %scramble I
-        [I, order] = scramble(I);
+        %scramble I & R
+        order = randperm(length(I));
+        I = scramble(I,order);
+        R = scramble(R,order);
 
-        
         %Make the social graph for the data that is going to be simulated
         M = pod_maker(size(I,1),pod_size);
-
-        %graph_M = graph(M);
-        %figure();
-        %plot(graph_M,'NodeColor','k', 'LineWidth',0.1)
 
         % Compute infection probabilities based on the social graph
         v_eff = infection_rate * M * I;
@@ -73,14 +65,16 @@ function [Sh, Ih, Rh] = simulate_absir(n_population,Iv0, T, infection_rate, reco
         % Draw random values
         v_infect = rand(size(I,1), 1) <= v_pr;
         v_recover = rand(n_population, 1) <= recovery_rate;
-        
+
         % Infect non-recovered individuals
         I = I | v_infect & (~R);
         new_infection = v_infect & (~R);
 
-        %Unscramble I
+        %Unscramble I & R & new_infection
         I = unscramble(I,order);
-        
+        R = unscramble(R,order);
+        new_infection = unscramble(new_infection, order);
+
         %merge people back together
         for g=1:n_population
             if remove(g) == 1
@@ -116,6 +110,6 @@ function [Sh, Ih, Rh] = simulate_absir(n_population,Iv0, T, infection_rate, reco
     end
     
     % Compute susceptible history
-    Sh = ones(dim, T) - Ih - Rh;
+    Sh = ones(n_population, T) - Ih - Rh;
 end
 
